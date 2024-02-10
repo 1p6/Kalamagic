@@ -25,7 +25,7 @@ If you just want to quickly get your voice changed, here's how:
 	(NOTE: you'll probably see each device appear several times with different prefixes; for example, my microphone shows up once as MME, once as Windows DirectSound, once as Windows WASAPI, and once as Windows WDM-KS. These represent different interfaces to access the same device; ideally they will all work, but in practice you may want to try different ones to see if the performance is better or worse.)
 6. You will next be prompted to select an output device from a list. For now, select your speakers/headphones.
 7. Lastly, you will be asked to choose a filter from a list. Pick whichever one you like (I recommend blackhelmet.txt).
-8. You should be able to hear yourself now!
+8. You should be able to hear yourself now! You can press any key afterwards to close the program.
 
 ### How do I use it for Discord, OBS, etc.?
 

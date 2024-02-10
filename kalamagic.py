@@ -175,6 +175,12 @@ def identity(a,b):
     datas[b][i] = datas[a][i]
     datas[b][i+1] = datas[a][i+1]
 
+def invert(a,b):
+    global datas, framei
+    i = framei
+    datas[b][i] = datas[a][i+1]
+    datas[b][i+1] = datas[a][i]
+
 def lowpass(a,b,hz):
     global datas, framei
     i = framei
@@ -329,6 +335,24 @@ def wavfile(a, fname):
     
     datas[a][i] = l / 32768
     datas[a][i+1] = r / 32768
+
+def pan(a,b,pan):
+    global datas, framei
+    i = framei
+    
+    theta = float(pan) * (np.pi/4) + (np.pi/4)
+    
+    datas[b][i] = np.cos(theta)*datas[a][i]
+    datas[b][i+1] = np.sin(theta)*datas[a][i+1]
+
+def modpan(a,b,c):
+    global datas, framei
+    i = framei
+    
+    theta = (datas[b][i] + datas[b][i+1]) / 2 * (np.pi/4) + (np.pi/4)
+    
+    datas[c][i] = np.cos(theta)*datas[a][i]
+    datas[c][i+1] = np.sin(theta)*datas[a][i+1]
 
 print('Initializing engine ...')
 

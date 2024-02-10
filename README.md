@@ -49,23 +49,41 @@ A *track* is one complete track of audio (two channels, left and right). Tracks 
 
 Below is a list of every possible block:
 
+#### Basic
 * `[a] -> [q] identity`: The identity block; this copies track `a` to track `q` without alteration. This is mostly useful for debugging.
+
+#### Volume and Mix
+* `[a] -> [q] amplify [db]`: Amplifies track `a` by `db` decibels to produce track `q`. This can be positive or negative.
+* `[a] [b] -> [q] mix [t]`: This mixes `a` and `b` to create `q`. The parameter `t` controls the mix; when `t = 0`, `q` will copy `a`, and when `t = 1`, `q` will copy `b`.
+* `[a] -> [q] tanhlimit`: This applies the hyperbolic tangent (tanh) function to track `a` to produce track `q`, for the purpose of preventing clipping while preserving dynamic range.
+
+#### Stereo Mix
+* `[a] -> [q] invert`: This switches the left and right tracks in `a`.
+* `[a] -> [q] pan [pan]`: This pans `a` by a factor of `pan`. A value of 0 is centered, -1 is fully panned left, and 1 is fully panned right.
+
+#### Equalization
 * `[a] -> [q] lowpass [hz]`: This simple low-pass filter sets `q` to be `a` with a low-pass centered on the frequency of `hz` hertz.
 * `[a] -> [q] basichighpass`: This is a very basic high-pass filter. I'm not experienced enough in digital audio processing algorithms to know how to add a frequency setting to this.
-* `[a] -> [q] amplify [db]`: Amplifies track `a` by `db` decibels to produce track `q`. This can be positive or negative.
-* `[a] -> [q] tanhlimit`: This applies the hyperbolic tangent (tanh) function to track `a` to produce track `q`, for the purpose of preventing clipping while preserving dynamic range.
+
+#### Delay
 * `[a] -> [q] delay [ms] [t]`: This applies a delay effect to track `a`, with a delay of `ms` milliseconds and a feedback factor of `t`. So if `t` is set to `0.3`, for instance, then each echo will be `0.3` times as loud as the previous one.
 * `[a] -> [q] delayinvert [ms] [t]`: This is the same delay effect, but this one also switches the stereo channels in the signal with every delay. This is helpful for reverb filters, for instance.
-* `[a] [b] -> [q] [t]`: This mixes `a` and `b` to create `q`. The parameter `t` controls the mix; when `t = 0`, `q` will copy `a`, and when `t = 1`, `q` will copy `b`.
+
+#### Pitch Shift
 * `[a] -> [q] pitchshift [pitch] [cutoff]`: This applies a basic pitch-shifting effect to `a` to produce `q`. Here, `pitch` is a multiplier; i.e. the pitch frequency of `q` will be the pitch frequency of `a` times `pitch`. So if you want to pitch-shift by `n` cents, you should find the value of 2^(`n`/1200) and use that as your `pitch` value. (Keep in mind that this effect is probably too rough to be usable for precise musical filters.) The value `cutoff` is a frequency in hertz controlling the length of the window used by the block; frequencies below the value will not be pitch-shifted, but the lower the value is, the more latency will be introduced.
 * `[a] -> [q] pitchshift [pitch]`: This is the same as above, but it uses the default `cutoff` value of 172.
 * `[a] -> [q] rectify`: This takes the absolute value of the signal `[a]`. This is used to create an octave-up effect by some guitar pedals.
+
+#### Modulation
+* `[a] [b] -> [q] mult`: This multiplies the signals `a` and `b` together. This can be used for some modulation effects.
+* `[a] [b] [c] -> [q] modmix`: This is effectively the `mix` block, but with the mix factor determined by a third track. When `c` is `-1`, `q` will be `a`, and when `c` is `1`, `q` will be `b`.
+* `[a] [b] -> [q] modpan`: This pans `a`, where the pan factor is given by `[b]`. You can use this for LFO-based panning, for instance.
+
+#### Signal Generation
 * `[q] sine [hz]`: This generates a constant sine wave of `hz` hertz.
 * `[q] saw [hz]`: This generates a constant sawtooth wave of `hz` hertz.
 * `[q] square [hz]`: This generates a constant square wave of `hz` hertz.
 * `[q] square [hz] [duty]`: This generates a constant pulse wave of `hz` hertz, with the duty cycle set to `duty`. So a value of 0.25 for `duty` will create a 25% pulse.
 * `[q] triangle [hz]`: This generates a constant triangle wave of `hz` hertz.
-* `[a] [b] -> [q] mult`: This multiplies the signals `a` and `b` together. This can be used for some modulation effects.
 * `[q] keypress [key]`: This generates a signal that is `1` or `-1` depending on whether or not the key named by `key` is pressed.
-* `[a] [b] [c] -> [q] modmix`: This is effectively the `mix` block, but with the mix factor determined by a third track. When `c` is `-1`, `q` will be `a`, and when `c` is `1`, `q` will be `b`.
 * `[q] wavfile [fname]`: Provide in `fname` the path to a signed 16-bit stereo WAV file from where the program is run. Then, `q` will be a track that loops the WAV file constantly. This does not resample intelligently (it uses nearest-neighbor), so for best results, use a file with the same sample rate as the one in config.json.

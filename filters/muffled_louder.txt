@@ -1,0 +1,3 @@
+0 -> 2 lowpass 50
+2 -> 3 amplify 10
+3 -> 1 tanhlimit

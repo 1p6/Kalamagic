@@ -1,0 +1,2 @@
+0 -> 2 pitchshift 0.8 10
+2 -> 1 delay 5 0.5

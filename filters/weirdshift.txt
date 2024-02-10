@@ -1,0 +1,2 @@
+0 -> 2 pitchshift 0.8
+2 -> 1 pitchshift 1.25

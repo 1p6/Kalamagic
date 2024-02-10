@@ -1,0 +1,4 @@
+0 -> 2 pitchshift 1.05 10
+0 -> 3 pitchshift 0.95 10
+2 3 -> 4 mix 0.5
+4 0 -> 1 mix 0.33

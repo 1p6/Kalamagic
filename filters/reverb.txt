@@ -1,0 +1,3 @@
+0 -> 2 delayinvert 40 0.7
+0 -> 3 delayinvert 50 0.7
+2 3 -> 1 mix 0.5

@@ -1,0 +1,2 @@
+2 wavfile sfx/noise.wav
+0 2 -> 1 mult

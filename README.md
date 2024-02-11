@@ -39,7 +39,7 @@ The config.json file contains five fields that control how Kalamagic runs:
 * `outputDevice`: This is the name of the audio output device. As with the input device, you will be prompted if this does not exist, and the configuration file will be updated.
 * `bufferLength`: This is how long the *buffer* is, i.e. how much audio the program will work with at a time. It takes time to do the audio computations, so if this length is too low, you will see `! BUFFER OVERRUN !` in the console, and the audio will sound distorted. If this happens, increase the setting and restart the program.
 * `historyLength`: This is how much previous audio Kalamagic keeps track of. If this value is too short, some audio effects will sound distorted, but the program's RAM usage will be proportional to this value.
-* `sampleRate`: This is the sample rate used by the program. You should probably set this to be equal to the sample rate of your microphone, but you can lower it if your CPU isn't fast enough for a given filter.
+* `sampleRate`: This is the sample rate (an integer) used by the program. You should probably set this to be equal to the sample rate of your microphone, but you can try lowering it if your CPU isn't fast enough for a given filter. By default, it is `-1`, meaning the program will automatically use the default sample rate of the input and output devices, so long as they match. Some systems may restrict the sample rate to either match the default, or be limited to specific values; the program will give an error if the chosen sample rate isn't supported by your system.
 
 ## Filter Files
 

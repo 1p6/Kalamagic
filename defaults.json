@@ -3,5 +3,5 @@
     "outputDevice": "",
     "bufferLength": 2048,
     "historyLength": 512000,
-    "sampleRate": 44100
+    "sampleRate": -1
 }

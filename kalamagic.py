@@ -91,7 +91,7 @@ if RATE < 0:
         print('User did not specify a custom sample rate, using default rate of', RATE)
     else:
         print('Default input/output sample rates did not match and user did not set a custom one!')
-        print('Default input rate:', defaultInputRate, ' Default output rate:', defaultOutputRate)
+        print('Default input rate:', defaultInputRate, 'Default output rate:', defaultOutputRate)
         sys.exit(0)
 
 config['inputDevice'] = getDeviceFullName(int(choice)-1)

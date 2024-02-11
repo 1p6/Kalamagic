@@ -12,7 +12,7 @@ The name is derived from the toki pona word "kalama," meaning "sound," and the E
 
 If you just want to quickly get your voice changed, here's how:
 
-1. Install [Python 3](https://www.python.org/) if you don't already have it. (Sorry, I have no idea what the minimum version is, but anything vaguely up-to-date should work.)
+1. Install [Python 3](https://www.python.org/) if you don't already have it. I don't know what the minimum version requirement is, but my guess is that 3.8+ should work fine (this is what numpy and scipy use). Please let me know what data you have to this end!
 2. Opening a command line as administrator, run the following commands:
 	- `python -m pip install numpy`
 	- `python -m pip install scipy`

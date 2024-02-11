@@ -58,6 +58,7 @@ Below is a list of every possible block:
 * `[a] -> [q] amplify [db]`: Amplifies track `a` by `db` decibels to produce track `q`. This can be positive or negative.
 * `[a] [b] -> [q] mix [t]`: This mixes `a` and `b` to create `q`. The parameter `t` controls the mix; when `t = 0`, `q` will copy `a`, and when `t = 1`, `q` will copy `b`.
 * `[a] -> [q] tanhlimit`: This applies the hyperbolic tangent (tanh) function to track `a` to produce track `q`, for the purpose of preventing clipping while preserving dynamic range.
+* `[a] -> [q] gate [db] [ms]`: If track `a` is quieter than `db` decibels, then it will fade out over a period of `ms` milliseconds until it becomes louder again. This can be used as a noise gate.
 
 ### Stereo Mix
 * `[a] -> [q] invert`: This switches the left and right tracks in `a`.
@@ -101,6 +102,7 @@ Feel free to add your own functions to the source file for custom blocks! Here a
 	* `RATE`: This is the sample rate in use.
 	* `totaltime`: This is the total amount of time, in seconds, since the start of the stream. This is the time for the current sample, so it will always increase by one sample's worth.
 	* `wavedata`: Whenever a block is passed a parameter ending in .wav, the corresponding WAV file will be loaded. This is a dictionary containing the audio in those files; each value is a tuple `(wrate, wdata)` where `wrate` is the sample rate and `wdata` is the data. This data is then a list of samples, where each sample is a tuple `(l, r)` of the left and right channels. Please note that these will, in a compatible WAV, run from -32768 to 32767, not from -1 to 1!
+	* `auxdata`: This list contains auxiliary data, in case you need to give your effect state. There is one element for each track, so you should index it by the output track. It will initially be `None`, after which your function can get/set it as needed.
 * The arguments to your function should begin with the input track indices (from zero to three of them), then the output track index, then any additional parameters. The track indices will be passed as integers; the additional parameters will be passed as strings, so be sure to cast them.
 
 How do you register your new function to be usable as a block? That's the neat part: you don't. Although this is admittedly cursed, Kalamagic uses reflection to look up your function by name. As long as it uses the above format, it should be usable.

@@ -167,6 +167,8 @@ datas = [idata, odata]
 for i in range(TRACKS-2): # Number of buffers
     datas += [[0]*MAXBUFF]
 
+auxdata = [None]*TRACKS
+
 iplayhead = BUFFER + MAXBUFF // 2 # Initial buffer
 oplayhead = MAXBUFF//2
 
@@ -357,6 +359,23 @@ def modpan(a,b,c):
     
     datas[c][i] = np.cos(theta)*datas[a][i]
     datas[c][i+1] = np.sin(theta)*datas[a][i+1]
+
+def gate(a,b,db,msrelease):
+    global datas, framei, totaltime, auxdata
+    i = framei
+    
+    fac = np.power(10,float(db)/10)
+    
+    if auxdata[b] is None:
+        auxdata[b] = totaltime
+    
+    if abs((datas[a][i] + datas[a][i+1]) / 2) > fac:
+        auxdata[b] = totaltime
+    
+    multiplier = max(0, 1 - (totaltime - auxdata[b]) / (float(msrelease) / 1000))
+    
+    datas[b][i] = datas[a][i] * multiplier
+    datas[b][i+1] = datas[a][i+1] * multiplier
 
 print('Initializing engine ...')
 

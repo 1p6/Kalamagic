@@ -1,6 +1,7 @@
 {
     "inputDevice": "",
     "outputDevice": "",
+    "packetLength": 0,
     "bufferLength": 2048,
     "historyLength": 512000,
     "sampleRate": -1

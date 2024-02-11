@@ -6,6 +6,7 @@ import json
 import sys
 import os
 import keyboard
+import traceback
 
 print('Loading configuration ...')
 
@@ -19,7 +20,13 @@ else:
     config = json.load(fp)
     fp.close()
 
+# gets passed to p.open as is, ie increase if it's performing bad
+# the number of frames (samples) that get passed to the input and output callbacks at a time
+# 0 defaults to whatever the system wants, 1024 on mine
+PACKET = config['packetLength']
+# processed sections will always be a multiple of this
 BUFFER = config['bufferLength']
+# the number of frames that get stored from the past
 MAXBUFF = config['historyLength']
 RATE = config['sampleRate']
 
@@ -171,36 +178,41 @@ print('File loaded, ' + str(maxchannel+1) + ' tracks required')
 
 TRACKS = maxchannel + 1
 
-idata = [0]*(BUFFER*2+MAXBUFF)
-odata = [0]*MAXBUFF
+# idata = [0]*(BUFFER*2+MAXBUFF)
+# odata = [0]*MAXBUFF
 
-datas = [idata, odata]
-for i in range(TRACKS-2): # Number of buffers
-    datas += [[0]*MAXBUFF]
+# buffer[track (input, output, intermediate tracks), frame num, channel (left/right)]
+buffer = np.zeros((TRACKS, MAXBUFF*2, 2))
+# datas = [idata, odata]
+# for i in range(TRACKS-2): # Number of buffers
+#     datas += [[0]*MAXBUFF]
 
 auxdata = [None]*TRACKS
 
-iplayhead = BUFFER + MAXBUFF // 2 # Initial buffer
-oplayhead = MAXBUFF//2
+# iplayhead = BUFFER + MAXBUFF // 2 # Initial buffer
+# oplayhead = MAXBUFF//2
 
-framei = 0
-totaltime = 0
+# framei = 0
+# totaltime = 0
+# section start: start frame index of what needs to be processed / was last processed
+sec_st = MAXBUFF
+# section end: end frame index (ie one past the last one) to be processed
+# sectionEnd - sectionStart == the length of frames that need to be produced
+sec_end = MAXBUFF
+output_head = MAXBUFF
+input_head = MAXBUFF
+# start and end times overall of current section
+start_time = 0.0
+end_time = 0.0
 
 def identity(a,b):
-    global datas, framei
-    i = framei
-    datas[b][i] = datas[a][i]
-    datas[b][i+1] = datas[a][i+1]
+    buffer[b,sec_st:sec_end] = buffer[a,sec_st:sec_end]
 
 def invert(a,b):
-    global datas, framei
-    i = framei
-    datas[b][i] = datas[a][i+1]
-    datas[b][i+1] = datas[a][i]
+    buffer[b,sec_st:sec_end,0] = buffer[a,sec_st,sec_end,1]
+    buffer[b,sec_st:sec_end,1] = buffer[a,sec_st,sec_end,0]
 
 def lowpass(a,b,hz):
-    global datas, framei
-    i = framei
     t = np.tan(np.pi * float(hz) / RATE)
     datas[b][i] = (t * datas[a][i] + t * datas[a][i-2] + (1-t) * datas[b][i-2]) / (t+1)
     datas[b][i+1] = (t * datas[a][i+1] + t * datas[a][i-1] + (1-t) * datas[b][i-1]) / (t+1)
@@ -390,58 +402,70 @@ def gate(a,b,db,msrelease):
 
 print('Initializing engine ...')
 
-def compute_frame():
-    global idata, odata, framei, iplayhead, oplayhead, chain, totaltime
-
-    while len(idata) <= len(odata):
-        print('! BUFFER OVERRUN !')
-        idata += [0]
-    
-    if len(odata) > MAXBUFF * 2:
-        toRemove = len(odata) - MAXBUFF
-        for j in range(TRACKS):
-            del datas[j][:toRemove]
-        iplayhead -= toRemove // 2
-        oplayhead -= toRemove // 2
-       
-    framei = len(odata)
-    odata += [0,0]
-    for j in range(2,TRACKS):
-        datas[j] += [0,0]
-
-    # Compute output buffer
-    for block in chain: # lol
-        globals()[block[0]](*block[1])
-
-    # Clipping
-    odata[framei] = np.clip(odata[framei], -1, 1)
-    odata[framei+1] = np.clip(odata[framei+1], -1, 1)
-    
-    totaltime += 1/RATE
-
 def icallback(in_data, frame_count, time_info, status):
-    global idata,iplayhead
-    while len(idata) < 2*iplayhead+2*frame_count:
-        idata += [0,0]
-    
-    samples = [[x / 16384, x / 16384] for x in np.frombuffer(in_data, dtype=np.int16)]
-    samples = list(np.array(samples).flatten())
-    idata[2*iplayhead:2*iplayhead+2*frame_count] = samples
-    iplayhead += frame_count
-    
-    return(None, pyaudio.paContinue)
+    global sec_st, sec_end, output_head, input_head, start_time, end_time
+    try:
+        input_len = frame_count
+        if input_len > MAXBUFF:
+            input_len = MAXBUFF
+            print('Input buffer overrun!')
+        input_end = input_head + input_len
+        if input_end > MAXBUFF*2:
+            # shift everything from second half to first half
+            # in theory we could instead keep two buffers and swap between them, but eh
+            buffer[:,:MAXBUFF] = buffer[:,MAXBUFF:]
+            sec_st = max(0, sec_st-MAXBUFF)
+            sec_end = max(0, sec_end-MAXBUFF)
+            output_head -= MAXBUFF
+            if output_head < 0:
+                output_head = 0
+                print('Output buffer overrun!')
+            input_head -= MAXBUFF
+            input_end -= MAXBUFF
+        # take last input_len samples
+        input_array = np.frombuffer(in_data, dtype=np.int16)[-input_len:]
+        input_array = input_array.astype(np.float64) / 16384
+        buffer[0,input_head:input_end,0] = input_array
+        buffer[0,input_head:input_end,1] = input_array
+        input_head = input_end
+
+        if input_head > sec_end+BUFFER:
+            start_time += (sec_end-sec_st) / RATE
+            sec_st = sec_end
+            # ensure amount to process is always a multiple of BUFFER
+            sec_end = (input_head-sec_st)//BUFFER * BUFFER + sec_st
+            end_time += (sec_end-sec_st) / RATE
+            # print('Processing', (start_time, end_time))
+            print('Processing', (sec_st, sec_end))
+            for block in chain: # lol, lmao even
+                globals()[block[0]](*block[1])
+            # clipping
+            buffer[1,sec_st:sec_end] = np.clip(buffer[1,sec_st:sec_end],-1,1)
+
+        return(None, pyaudio.paContinue)
+    except Exception as err:
+        # since this runs in a separate thread, errors dont get printed out
+        traceback.print_exc()
+        raise err
 
 def ocallback(in_data, frame_count, time_info, status):
-    global odata,oplayhead
-    while len(odata) < 2*oplayhead+2*frame_count:
-        compute_frame()
-    samples = odata[2*oplayhead:2*oplayhead+2*frame_count]
-    oplayhead += frame_count
-    samplebytes = np.array([s*16384 for s in samples], dtype=np.int16).tobytes()
-    return (samplebytes, pyaudio.paContinue)
+    try:
+        global sec_st, sec_end, output_head
+        output_array = np.zeros((frame_count, 2))
+        end = min(sec_end, output_head+frame_count)
+        output_array[:end-output_head] = buffer[1,output_head:end]
+        output_head = end
+        # tobytes goes in C order
+        # ie frame 0 left, frame 0 right, frame 1 left, frame 1 right
+        return ((output_array * 16384).astype(np.int16).tobytes(), pyaudio.paContinue)
+    except Exception as err:
+        traceback.print_exc()
+        raise err
 
-ostream = p.open(format=pyaudio.paInt16,channels=2,rate=RATE,output=True,stream_callback=ocallback,output_device_index=int(choice2)-1)
-istream = p.open(format=pyaudio.paInt16,channels=1,rate=RATE,input=True,stream_callback=icallback,input_device_index=int(choice)-1)
+ostream = p.open(format=pyaudio.paInt16,channels=2,rate=RATE,frames_per_buffer=PACKET,
+    output=True,stream_callback=ocallback,output_device_index=int(choice2)-1)
+istream = p.open(format=pyaudio.paInt16,channels=1,rate=RATE,frames_per_buffer=PACKET,
+    input=True,stream_callback=icallback,input_device_index=int(choice)-1)
 
 print('Successfully initialized!')
 

@@ -45,6 +45,8 @@ The config.json file contains five fields that control how Kalamagic runs:
 
 Each filter file contains one or more *blocks,* which are individual filters applied to an audio track. A block takes some number of tracks as input and produces one track of output.
 
+There should be one block at the beginning of every line. There may be blank lines in between. You can also add comments by starting a line with `#`, in which case the remainder of the line will be ignored.
+
 A *track* is one complete track of audio (two channels, left and right). Tracks are numbered starting from 0; track 0 is the input, and track 1 is the output. A track should only be used as the output of one block (except for track 0, which should not be used as the output of any block), and tracks should be numbered sequentially (if a filter file uses a track, the program will assume it will also use every lower-numbered track). The more tracks a file uses, the higher the RAM consumption and computational load of the filter.
 
 Below is a list of every possible block:

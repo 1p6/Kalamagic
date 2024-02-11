@@ -89,3 +89,18 @@ Below is a list of every possible block:
 * `[q] triangle [hz]`: This generates a constant triangle wave of `hz` hertz.
 * `[q] keypress [key]`: This generates a signal that is `1` or `-1` depending on whether or not the key named by `key` is pressed.
 * `[q] wavfile [fname]`: Provide in `fname` the path to a signed 16-bit stereo WAV file from where the program is run. Then, `q` will be a track that loops the WAV file constantly. This does not resample intelligently (it uses nearest-neighbor), so for best results, use a file with the same sample rate as the one in config.json.
+
+### What about custom blocks?
+
+Feel free to add your own functions to the source file for custom blocks! Here are some guidelines:
+
+* There are two global variables your function should reference. The variable `datas` is a list of lists; each element of `datas` represents one track, and its elements in turn are floating-point samples from -1 to 1. The samples are interleaved, with the even-numbered indices corresponding to the left channel and the odd-numbered indices corresponding to the right channel. The variable `framei` represents the index of the current sample in each of the tracks in `datas`.
+* The indices in each track range from 0 to `framei`+1. The goal of the function should be to set `datas[q][framei]` and `datas[q][framei+1]` to whatever the output values are. You can reference earlier indices as well as other tracks in `datas` when computing the new sample.
+* All indices referenced should be relative to `framei`; tracks are frequently truncated to prevent memory leakage, so `framei` is not always going to increase.
+* There are a few other globals you may want to use:
+	* `RATE`: This is the sample rate in use.
+	* `totaltime`: This is the total amount of time, in seconds, since the start of the stream. This is the time for the current sample, so it will always increase by one sample's worth.
+	* `wavedata`: Whenever a block is passed a parameter ending in .wav, the corresponding WAV file will be loaded. This is a dictionary containing the audio in those files; each value is a tuple `(wrate, wdata)` where `wrate` is the sample rate and `wdata` is the data. This data is then a list of samples, where each sample is a tuple `(l, r)` of the left and right channels. Please note that these will, in a compatible WAV, run from -32768 to 32767, not from -1 to 1!
+* The arguments to your function should begin with the input track indices (from zero to three of them), then the output track index, then any additional parameters. The track indices will be passed as integers; the additional parameters will be passed as strings, so be sure to cast them.
+
+How do you register your new function to be usable as a block? That's the neat part: you don't. Although this is admittedly cursed, Kalamagic uses reflection to look up your function by name. As long as it uses the above format, it should be usable.

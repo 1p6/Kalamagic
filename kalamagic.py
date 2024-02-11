@@ -87,8 +87,8 @@ if RATE < 0:
     defaultInputRate = p.get_device_info_by_index(int(choice)-1).get('defaultSampleRate')
     defaultOutputRate = p.get_device_info_by_index(int(choice2)-1).get('defaultSampleRate')
     if defaultOutputRate == defaultInputRate:
-        print('User did not specify a custom sample rate, using default rate of', defaultOutputRate)
         RATE = int(defaultOutputRate)
+        print('User did not specify a custom sample rate, using default rate of', RATE)
     else:
         print('Default input/output sample rates did not match and user did not set a custom one!')
         print('Default input rate:', defaultInputRate, ' Default output rate:', defaultOutputRate)

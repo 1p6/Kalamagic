@@ -131,7 +131,11 @@ wavedata = {}
 
 fp = open('filters/' + filelist[int(choice3)-1], 'r')
 for line in fp:
+    if line[0] == '#':
+        continue
     words = line.strip().split(' ')
+    if len(words) == 0:
+        continue
     fname = ''
     args = []
     starti = 0
